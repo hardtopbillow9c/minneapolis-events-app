@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minneapolis Events Guide</title>
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="./manifest.json">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 100%;
+            min-height: 100vh;
+            padding-bottom: 80px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 15px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            text-align: center;
+            color: #2c3e50;
+            font-size: 1.3em;
+            margin-bottom: 10px;
+        }
+
+        .search-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #667eea;
+            border-radius: 25px;
+            font-size: 1em;
+            outline: none;
+        }
+
+        .filter-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .filter-btn.active {
+            background: #2c3e50;
+        }
+
+        .stats-bar {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px 20px;
+            text-align: center;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .events-container {
+            padding: 20px;
+        }
+
+        .event-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            border-left: 5px solid #667eea;
+            transition: transform 0.2s ease;
+        }
+
+        .event-card:active {
+            transform: scale(0.98);
+        }
+
+        .event-date {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+
+        .event-title {
+            font-size: 1.1em;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            line-height: 1.3;
+        }
+
+        .event-venue {
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+
+        .event-details {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 8px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .event-category {
+            background: #f8f9fa;
+            color: #667eea;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 600;
+            display: inline-block;
+            margin-top: 8px;
+        }
+
+        .no-events {
+            text-align: center;
+            padding: 40px 20px;
+            color: white;
+            font-size: 1.1em;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px 20px;
+            color: white;
+            font-size: 1.1em;
+        }
+
+        .error {
+            background: rgba(255, 255, 255, 0.95);
+            border-left: 5px solid #e74c3c;
+            margin: 20px;
+            padding: 20px;
+            border-radius: 16px;
+            color: #e74c3c;
+            font-weight: 600;
+        }
+
+        .filters {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 10px 20px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .filters::-webkit-scrollbar {
+            display: none;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            padding: 20px;
+        }
+
+        .quick-action {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            text-decoration: none;
+            color: #2c3e50;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease;
+        }
+
+        .quick-action:active {
+            transform: scale(0.95);
+        }
+
+        .update-status {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px 20px;
+            text-align: center;
+            font-size: 0.85em;
+            color: #666;
+            border-top: 1px solid rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎭 Minneapolis Events</h1>
+            <div class="search-container">
+                <input type="text" class="search-input" placeholder="Search events..." id="searchInput">
+                <button class="filter-btn" onclick="showToday()">Today</button>
+                <button class="filter-btn" onclick="showWeekend()">Weekend</button>
+            </div>
+        </div>
+
+        <div class="filters" id="categoryFilters"></div>
+        
+        <div class="stats-bar" id="statsBar">Loading events...</div>
+
+        <div class="quick-actions" id="quickActions" style="display: none;">
+            <a href="#" class="quick-action" onclick="showToday()">
+                📅 Today's Events
+            </a>
+            <a href="#" class="quick-action" onclick="showThisWeek()">
+                🗓️ This Week
+            </a>
+            <a href="#" class="quick-action" onclick="showMusic()">
+                🎵 Music Only
+            </a>
+            <a href="#" class="quick-action" onclick="showTheater()">
+                🎭 Theater Only
+            </a>
+        </div>
+
+        <div class="events-container" id="eventsContainer">
+            <div class="loading">Loading Minneapolis events...</div>
+        </div>
+
+        <div class="update-status" id="updateStatus">
+            Last updated: Checking...
+        </div>
+    </div>
+
+    <script>
+        let allEvents = [];
+        let filteredEvents = [];
+        let currentFilters = {
+            search: '',
+            category: 'all',
+            date: 'all'
+        };
+
+        // Parse CSV data
+        function parseCSV(csvText) {
+            const lines = csvText.split('\n');
+            const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+            const events = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                if (lines[i].trim()) {
+                    const values = parseCSVLine(lines[i]);
+                    if (values.length >= headers.length) {
+                        const event = {};
+                        headers.forEach((header, index) => {
+                            event[header] = values[index] ? values[index].trim().replace(/"/g, '') : '';
+                        });
+                        events.push(event);
+                    }
+                }
+            }
+            return events;
+        }
+
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current);
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            result.push(current);
+            return result;
+        }
+
+        // Load events data
+        async function loadEvents() {
+            try {
+                const response = await fetch('./events-data.csv?t=' + Date.now());
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const csvText = await response.text();
+                allEvents = parseCSV(csvText);
+                
+                // Parse and sort by date
+                allEvents = allEvents
+                    .filter(event => event['Event Name'] && event['Date(s)'])
+                    .map(event => ({
+                        ...event,
+                        parsedDate: parseEventDate(event['Date(s)'])
+                    }))
+                    .sort((a, b) => a.parsedDate - b.parsedDate);
+
+                filteredEvents = [...allEvents];
+                displayEvents();
+                setupFilters();
+                updateStats();
+                
+                document.getElementById('quickActions').style.display = 'grid';
+                
+            } catch (error) {
+                console.error('Error loading events:', error);
+                document.getElementById('eventsContainer').innerHTML = `
+                    <div class="error">
+                        ❌ Unable to load events data. 
+                        <br>Please check your connection and try again.
+                    </div>
+                `;
+            }
+        }
+
+        function parseEventDate(dateStr) {
+            // Simple date parsing - handles "May 23 2025", "May 23 - May 25 2025", etc.
+            const match = dateStr.match(/(\w+)\s+(\d+).*?(\d{4})/);
+            if (match) {
+                const [, month, day, year] = match;
+                const monthNum = new Date(`${month} 1, 2000`).getMonth();
+                return new Date(parseInt(year), monthNum, parseInt(day));
+            }
+            return new Date(); // Fallback
+        }
+
+        function displayEvents() {
+            const container = document.getElementById('eventsContainer');
+            
+            if (filteredEvents.length === 0) {
+                container.innerHTML = `
+                    <div class="no-events">
+                        🎭 No events found matching your criteria.
+                        <br>Try adjusting your search or filters.
+                    </div>
+                `;
+                return;
+            }
+
+            const eventsHTML = filteredEvents.slice(0, 50).map(event => {
+                const isUpcoming = event.parsedDate >= new Date();
+                const dateClass = isUpcoming ? 'event-date' : 'event-date past';
+                
+                return `
+                    <div class="event-card">
+                        <div class="${dateClass}">${event['Date(s)']}</div>
+                        <div class="event-title">${event['Event Name']}</div>
+                        <div class="event-venue">📍 ${event['Venue Name']}</div>
+                        <div class="event-details">
+                            <span>🕐</span><span>${event['Time(s)'] || 'Time TBD'}</span>
+                            <span>📍</span><span>${event['Venue Address/Area']}</span>
+                            ${event['Notes'] ? `<span>📝</span><span>${event['Notes']}</span>` : ''}
+                        </div>
+                        <div class="event-category">${event['Category'] || 'Event'}</div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = eventsHTML;
+        }
+
+        function setupFilters() {
+            // Get unique categories
+            const categories = [...new Set(allEvents.map(e => e['Category']).filter(Boolean))];
+            
+            const filtersContainer = document.getElementById('categoryFilters');
+            const filterButtons = [
+                '<button class="filter-btn active" onclick="filterByCategory(\'all\')">All</button>',
+                ...categories.slice(0, 8).map(cat => 
+                    `<button class="filter-btn" onclick="filterByCategory('${cat}')">${cat}</button>`
+                )
+            ];
+            
+            filtersContainer.innerHTML = filterButtons.join('');
+
+            // Setup search
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                currentFilters.search = e.target.value.toLowerCase();
+                applyFilters();
+            });
+        }
+
+        function filterByCategory(category) {
+            currentFilters.category = category;
+            
+            // Update button states
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            applyFilters();
+        }
+
+        function applyFilters() {
+            filteredEvents = allEvents.filter(event => {
+                // Search filter
+                if (currentFilters.search) {
+                    const searchText = `${event['Event Name']} ${event['Venue Name']} ${event['Category']}`.toLowerCase();
+                    if (!searchText.includes(currentFilters.search)) return false;
+                }
+                
+                // Category filter
+                if (currentFilters.category !== 'all') {
+                    if (event['Category'] !== currentFilters.category) return false;
+                }
+                
+                // Date filter
+                if (currentFilters.date === 'today') {
+                    const today = new Date();
+                    const eventDate = event.parsedDate;
+                    if (eventDate.toDateString() !== today.toDateString()) return false;
+                }
+                
+                if (currentFilters.date === 'weekend') {
+                    const day = event.parsedDate.getDay();
+                    if (day !== 0 && day !== 6) return false; // 0 = Sunday, 6 = Saturday
+                }
+                
+                return true;
+            });
+            
+            displayEvents();
+            updateStats();
+        }
+
+        function updateStats() {
+            const total = filteredEvents.length;
+            const upcoming = filteredEvents.filter(e => e.parsedDate >= new Date()).length;
+            
+            document.getElementById('statsBar').textContent = 
+                `${total} events found • ${upcoming} upcoming`;
+        }
+
+        // Quick action functions
+        function showToday() {
+            currentFilters.date = 'today';
+            applyFilters();
+        }
+
+        function showWeekend() {
+            currentFilters.date = 'weekend';
+            applyFilters();
+        }
+
+        function showThisWeek() {
+            const today = new Date();
+            const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+            
+            filteredEvents = allEvents.filter(event => 
+                event.parsedDate >= today && event.parsedDate <= nextWeek
+            );
+            
+            displayEvents();
+            updateStats();
+        }
+
+        function showMusic() {
+            currentFilters.category = 'Music';
+            filterByCategory('Music');
+        }
+
+        function showTheater() {
+            currentFilters.category = 'Theater';
+            filterByCategory('Theater');
+        }
+
+        // Check for updates
+        async function checkForUpdates() {
+            try {
+                const response = await fetch('./last-updated.json?t=' + Date.now());
+                const data = await response.json();
+                
+                document.getElementById('updateStatus').textContent = 
+                    `Last updated: ${new Date(data.lastUpdated).toLocaleDateString()}`;
+            } catch (error) {
+                document.getElementById('updateStatus').textContent = 
+                    'Last updated: Unknown';
+            }
+        }
+
+        // Initialize app
+        loadEvents();
+        checkForUpdates();
+
+        // Auto-refresh every 30 minutes
+        setInterval(() => {
+            loadEvents();
+            checkForUpdates();
+        }, 30 * 60 * 1000);
+
+        // Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js').catch(console.error);
+        }
+    </script>
+</body>
+</html>
