@@ -1,0 +1,13 @@
+{
+  "lastUpdated": "2025-05-29T12:00:00.000Z",
+  "totalEvents": 715,
+  "newEventsAdded": 0,
+  "sources": [
+    "Manual Upload",
+    "First Avenue",
+    "Guthrie Theater", 
+    "Event APIs"
+  ],
+  "nextUpdate": "2025-06-01T11:00:00.000Z",
+  "version": "1.0"
+}
